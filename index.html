@@ -71,9 +71,9 @@
         .stat-lbl { font-size: 9px; color: var(--hint); text-transform: uppercase; margin-top: 2px; display: block;}
 
         .format-badge {
-            background: rgba(255,255,255,0.05); color: var(--hint);
-            padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
-            margin-bottom: 15px; display: inline-block; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(10, 132, 255, 0.15); color: var(--accent);
+            padding: 5px 12px; border-radius: 10px; font-size: 11px; font-weight: 800;
+            margin-bottom: 15px; display: inline-block; border: 1px solid rgba(10, 132, 255, 0.1);
             text-transform: uppercase;
         }
 
@@ -141,12 +141,10 @@
 
         async function init() {
             try {
-                // cachebust додається, щоб Google не віддавав старі нулі
                 const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&cb=${Date.now()}`);
                 const text = await res.text();
                 const json = JSON.parse(text.substring(47).slice(0, -2));
                 
-                // Функція для перетворення тексту в число
                 const getNum = (val) => {
                     if (!val) return 0;
                     let v = val.v !== undefined ? val.v : val.f;
@@ -163,15 +161,13 @@
                     subs: getNum(r.c[5]), 
                     views: getNum(r.c[6]),
                     er: getNum(r.c[7]), 
-                    price: getNum(r.c[8]), // Отримуємо числове значення з колонки I
-                    format: r.c[9]?.v || r.c[9]?.f || '2/48'
+                    price: getNum(r.c[8]),
+                    format: r.c[9]?.v || r.c[9]?.f || '1/24'
                 })).filter(c => c.title && c.title !== 'title');
 
-                // Фільтри категорій
                 const cats = [...new Set(channels.map(c => {
                     if (!c.catName) return null;
-                    let name = c.catName.toString().trim();
-                    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+                    return c.catName.toString().trim();
                 }).filter(Boolean))];
 
                 const container = document.getElementById('catContainer');
@@ -182,7 +178,7 @@
                 
                 render(channels);
             } catch (e) { 
-                document.getElementById('list').innerHTML = '<div style="text-align:center; padding:40px;">❌ Помилка завантаження бази. Спробуйте оновити.</div>'; 
+                document.getElementById('list').innerHTML = '<div style="text-align:center; padding:40px;">❌ Помилка завантаження бази.</div>'; 
             }
         }
 
@@ -202,7 +198,7 @@
                         <a href="#" class="view-btn" onclick="vibe(); event.stopPropagation(); tg.openTelegramLink('${ch.link}')">🔍 Канал</a>
                     </div>
                     
-                    <div class="format-badge">Формат: ${ch.format}</div>
+                    <div class="format-badge">⚡️ Формат: ${ch.format}</div>
 
                     <div class="stats">
                         <div class="stat-box"><span class="stat-val">${formatK(ch.subs)}</span><span class="stat-lbl">Сабів</span></div>
@@ -212,16 +208,21 @@
                     
                     <div class="price-row">
                         <div class="price">${Number(ch.price).toLocaleString('uk-UA')} <span>₴</span></div>
-                        <div class="order-btn" onclick="order('${ch.title}', '${ch.price}', '${ch.format}')">Обрати</div>
+                        <div class="order-btn" onclick="order('${ch.title}', '${ch.price}', '${ch.format}', '${ch.catName}')">Обрати</div>
                     </div>
                 `;
                 list.appendChild(card);
             });
         }
 
-        function order(title, price, format) {
+        function order(title, price, format, cat) {
             vibe('heavy');
-            const msg = `⚡️ Заявка TEQRA Ads\n\nКанал: ${title}\nФормат: ${format}\nЦіна: ${Number(price).toLocaleString()} ₴\n\nЧекаю на деталі оплати!`;
+            let promoText = "";
+            if(cat.includes("Робота")) {
+                promoText = "\n\n🎁 Доступні оптові пакети (5/10/20 постів) зі знижкою до -20%!";
+            }
+            
+            const msg = `⚡️ Заявка TEQRA Ads\n\nКанал: ${title}\nФормат: ${format}\nЦіна: ${Number(price).toLocaleString()} ₴${promoText}\n\nЧекаю на деталі оплати!`;
             tg.openTelegramLink(`https://t.me/${ADMIN}?text=${encodeURIComponent(msg)}`);
         }
 
@@ -234,7 +235,7 @@
                 render(channels);
             } else {
                 const filtered = channels.filter(c => 
-                    c.catName && c.catName.toString().trim().toLowerCase() === cat.toLowerCase()
+                    c.catName && c.catName.toString().trim() === cat
                 );
                 render(filtered);
             }

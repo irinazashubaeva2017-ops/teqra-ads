@@ -3,144 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TEQRA Ads Ecosystem</title>
+    <title>TEQRA Ads Premium</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --bg: #0f0f10; --card: #1c1c1e; --accent: #0A84FF;
             --text: #ffffff; --hint: #8e8e93; --success: #30D158;
-            --warning: #FFD60A; --tab-bg: #252527;
+            --search-bg: #242426;
+            --grad: linear-gradient(135deg, #0A84FF 0%, #5E5CE6 100%);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 70px; }
-
-        /* Навігація внизу (Таби) */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; height: 65px;
-            background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(20px);
-            display: flex; justify-content: space-around; align-items: center;
-            border-top: 1px solid rgba(255,255,255,0.05); z-index: 100;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background-color: var(--bg); color: var(--text); 
+            margin: 0; padding-bottom: 40px; overflow-x: hidden;
         }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--hint); font-size: 10px; font-weight: 600; cursor: pointer; }
-        .nav-item.active { color: var(--accent); }
-        .nav-icon { font-size: 20px; }
 
-        .glass-header { padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .header h1 { font-size: 22px; font-weight: 800; margin: 0; }
-        .header span { color: var(--accent); }
+        .glass-header {
+            position: sticky; top: 0; z-index: 50;
+            background: rgba(15, 15, 16, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 15px 20px 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
 
-        /* Картка профілю */
-        .profile-card { background: var(--card); border-radius: 20px; padding: 20px; margin: 15px; border: 1px solid rgba(255,255,255,0.05); }
-        .user-id { font-size: 12px; color: var(--hint); margin-bottom: 5px; }
-        .balance-box { font-size: 28px; font-weight: 900; margin-bottom: 15px; }
-        .btn-topup { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 700; width: 100%; }
-
-        /* Картка каналу */
-        .card { background: var(--card); border-radius: 24px; padding: 20px; margin: 15px; border: 1px solid rgba(255,255,255,0.03); }
-        .price-breakdown { font-size: 11px; color: var(--hint); background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; margin: 12px 0; }
-        .price-breakdown div { display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .price-total { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 5px; color: #fff; font-weight: 700; }
-
-        .safe-tag { color: var(--success); font-size: 10px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .header h1 { font-size: 26px; font-weight: 900; margin: 0; letter-spacing: -0.5px; }
+        .header h1 span { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        #market-page, #profile-page { display: none; }
-        .active-page { display: block !important; }
+        .nav-btns { display: flex; gap: 6px; }
+        .nav-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+            color: var(--text); padding: 7px 12px; border-radius: 10px; 
+            font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase;
+        }
+
+        /* Рядок пошуку */
+        .search-container { margin-bottom: 15px; position: relative; }
+        .search-input {
+            width: 100%; background: var(--search-bg); border: 1px solid rgba(255,255,255,0.05);
+            color: white; padding: 12px 16px 12px 40px; border-radius: 14px; font-size: 14px; outline: none;
+            transition: 0.2s;
+        }
+        .search-input:focus { border-color: var(--accent); }
+        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--hint); font-size: 14px; }
+
+        .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .filters::-webkit-scrollbar { display: none; }
+        .chip { 
+            background: rgba(255,255,255,0.05); padding: 10px 18px; border-radius: 14px; 
+            font-size: 13px; font-weight: 600; white-space: nowrap; 
+            border: 1px solid transparent; transition: 0.2s; cursor: pointer;
+        }
+        .chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .main-content { padding: 15px; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .card { 
+            background: var(--card); border-radius: 24px; padding: 22px; margin-bottom: 15px; 
+            border: 1px solid rgba(255,255,255,0.03); opacity: 0; animation: slideUp 0.4s forwards;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .title { font-size: 20px; font-weight: 800; margin: 0; line-height: 1.2; }
+        .verify-tag { font-size: 9px; color: var(--success); font-weight: 800; text-transform: uppercase; margin-top: 4px; display: block; letter-spacing: 0.5px; }
+        
+        .view-btn {
+            background: rgba(10, 132, 255, 0.1); color: var(--accent); padding: 8px 14px;
+            border-radius: 12px; font-size: 11px; font-weight: 700; text-decoration: none; border: 1px solid rgba(10, 132, 255, 0.2);
+        }
+
+        .stats { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 16px; }
+        .stat-box { text-align: center; width: 33%; }
+        .stat-val { font-size: 15px; font-weight: 800; display: block; color: #fff; }
+        .stat-lbl { font-size: 9px; color: var(--hint); text-transform: uppercase; margin-top: 2px; display: block;}
+
+        /* Прозорий розрахунок ціни */
+        .price-breakdown { font-size: 11px; color: var(--hint); background: rgba(255,255,255,0.03); padding: 12px; border-radius: 14px; margin-bottom: 18px; border: 1px dashed rgba(255,255,255,0.1); }
+        .price-breakdown div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .price-total { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px; margin-top: 2px; color: #fff; font-weight: 800; font-size: 14px; }
+        .safe-tag { color: var(--success); font-weight: 800; text-transform: uppercase; margin-bottom: 8px; display: block; font-size: 10px; }
+
+        .order-btn {
+            background: var(--accent); color: white; padding: 14px 24px; width: 100%;
+            border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        #empty-state { text-align: center; padding: 40px 20px; color: var(--hint); display: none; }
+        #empty-state h3 { color: white; margin-bottom: 5px; }
+
+        #loading { text-align: center; padding: 50px; color: var(--hint); }
+        .loader { width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top-color: var(--accent); animation: spin 1s infinite linear; margin: 0 auto 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div id="market-page" class="active-page">
-        <div class="glass-header">
+    <div class="glass-header">
+        <div class="header-top">
             <div class="header"><h1>TEQRA <span>Ads</span></h1></div>
+            <div class="nav-btns">
+                <button class="nav-btn" onclick="showSecurity()">🛡 SafePay</button>
+            </div>
         </div>
-        <div id="list"></div>
+        
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Знайти канал..." oninput="handleSearch()">
+        </div>
+
+        <div class="filters" id="catContainer">
+            <div class="chip active" onclick="filterByCat('all', this)">Всі канали</div>
+        </div>
     </div>
 
-    <div id="profile-page">
-        <div class="glass-header"><div class="header"><h1>Мій <span>Кабінет</span></h1></div></div>
-        <div class="profile-card">
-            <div class="user-id" id="user-name">Завантаження...</div>
-            <div class="balance-box">0.00 ₴</div>
-            <button class="btn-topup" onclick="topUp()">💳 Поповнити баланс</button>
-            <p style="font-size: 11px; color: var(--hint); margin-top: 15px;">🔒 Кошти захищені системою безпечних угод TEQRA SafePay.</p>
+    <div class="main-content">
+        <div id="list"><div id="loading"><div class="loader"></div>Завантаження бази...</div></div>
+        <div id="empty-state">
+            <h3>😕 Нічого не знайдено</h3>
+            <p>Спробуйте змінити запит або категорію</p>
         </div>
     </div>
-
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchPage('market', this)">
-            <span class="nav-icon">🛍</span><span>Маркет</span>
-        </div>
-        <div class="nav-item" onclick="switchPage('profile', this)">
-            <span class="nav-icon">👤</span><span>Кабінет</span>
-        </div>
-    </nav>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
-        
-        const ADMIN = 'TEQRA_Manager';
-        const SHEET_ID = '1arC_OE150V-0onKPWEwhNpK_ZuBJhJ0ZWvRSF2VwFu8';
+        tg.setHeaderColor('#0f0f10');
+        tg.setBackgroundColor('#0f0f10');
 
-        document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || 'Користувач';
+        const vibe = (type = 'light') => { if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred(type); };
 
-        function switchPage(page, el) {
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById('market-page').classList.remove('active-page');
-            document.getElementById('profile-page').classList.remove('active-page');
-            document.getElementById(page + '-page').classList.add('active-page');
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        function showSecurity() {
+            vibe('medium');
+            tg.showPopup({
+                title: '🛡 Гарантія TEQRA SafePay',
+                message: 'Гроші депонуються на рахунку платформи і переказуються власнику каналу ТІЛЬКИ після успішного виходу вашої реклами. 100% захист.',
+                buttons: [{type: 'ok', text: 'Зрозуміло'}]
+            });
         }
 
-        async function loadData() {
+        const formatK = (n) => {
+            if (!n || isNaN(n)) return '0';
+            if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/, '') + 'М';
+            if (n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/, '') + 'к';
+            return n;
+        };
+
+        const SHEET_ID = '1arC_OE150V-0onKPWEwhNpK_ZuBJhJ0ZWvRSF2VwFu8';
+        const ADMIN = 'TEQRA_Manager'; 
+        let channels = [];
+        let currentCat = 'all';
+
+        async function init() {
             try {
                 const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&cb=${Date.now()}`);
                 const text = await res.text();
                 const json = JSON.parse(text.substring(47).slice(0, -2));
                 
-                const rows = json.table.rows;
-                const list = document.getElementById('list');
-                list.innerHTML = '';
+                const getNum = (val) => {
+                    if (!val) return 0;
+                    let v = val.v !== undefined ? val.v : val.f;
+                    let clean = String(v).replace(/[^0-9.]/g, '');
+                    return Number(clean) || 0;
+                };
 
-                rows.forEach(r => {
-                    const title = r.c[1]?.v || r.c[1]?.f;
-                    if(!title || title === 'title') return;
+                channels = json.table.rows.map(r => ({
+                    id: r.c[0]?.v, 
+                    title: r.c[1]?.v || r.c[1]?.f, 
+                    link: r.c[2]?.v || r.c[2]?.f,
+                    catName: r.c[4]?.v || r.c[4]?.f, 
+                    subs: getNum(r.c[5]), 
+                    views: getNum(r.c[6]),
+                    er: getNum(r.c[7]), 
+                    price: getNum(r.c[8]),
+                    format: r.c[9]?.v || r.c[9]?.f || '1/24'
+                })).filter(c => c.title && c.title !== 'title');
 
-                    const rawPrice = Number(String(r.c[8]?.v || r.c[8]?.f).replace(/[^0-9.]/g, '')) || 0;
-                    const commission = Math.round(rawPrice * 0.15); // Твоя комісія 15%
-                    const totalPrice = rawPrice + commission;
-
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <div class="safe-tag">🛡 TEQRA SafePay | Безпечна угода</div>
-                        <h2 style="margin:0;">${title}</h2>
-                        
-                        <div class="price-breakdown">
-                            <div><span>Ціна адміна:</span> <span>${rawPrice} ₴</span></div>
-                            <div><span>Комісія сервісу:</span> <span>${commission} ₴</span></div>
-                            <div class="price-total"><span>До сплати:</span> <span>${totalPrice} ₴</span></div>
-                        </div>
-                        
-                        <button class="btn-topup" onclick="order('${title}', ${totalPrice})">⚡️ Купити розміщення</button>
-                    `;
-                    list.appendChild(card);
+                // Генерація категорій
+                const cats = [...new Set(channels.map(c => c.catName).filter(Boolean))];
+                const container = document.getElementById('catContainer');
+                container.innerHTML = '<div class="chip active" onclick="filterByCat(\'all\', this)">Всі канали</div>';
+                cats.forEach(c => {
+                    container.innerHTML += `<div class="chip" onclick="filterByCat('${c}', this)">${c}</div>`;
                 });
-            } catch(e) { console.error(e); }
+                
+                render(channels);
+            } catch (e) { 
+                document.getElementById('list').innerHTML = '<div style="text-align:center; padding:40px;">❌ Помилка бази. Перевірте таблицю.</div>'; 
+            }
         }
 
-        function order(title, price) {
-            const msg = `💼 ЗАЯВКА НА РОЗМІЩЕННЯ\n\nКанал: ${title}\nСума: ${price} ₴\n\nБажаю оплатити через баланс кабінету (SafePay).`;
+        function render(data) {
+            const list = document.getElementById('list');
+            const emptyState = document.getElementById('empty-state');
+            list.innerHTML = '';
+
+            if (data.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            } else {
+                emptyState.style.display = 'none';
+            }
+
+            data.forEach((ch, i) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.animationDelay = `${i * 0.05}s`;
+                
+                const rawPrice = Number(ch.price) || 0;
+                const commission = Math.round(rawPrice * 0.15); // Твоя націнка 15%
+                const totalPrice = rawPrice + commission;
+
+                card.innerHTML = `
+                    <div class="card-top">
+                        <div><h2 class="title">${ch.title}</h2><span class="verify-tag">✓ Перевірено TEQRA</span></div>
+                        <a href="#" class="view-btn" onclick="vibe(); event.stopPropagation(); tg.openTelegramLink('${ch.link}')">🔍 Канал</a>
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat-box"><span class="stat-val">${formatK(ch.subs)}</span><span class="stat-lbl">Сабів</span></div>
+                        <div class="stat-box"><span class="stat-val">${formatK(ch.views)}</span><span class="stat-lbl">Охопл</span></div>
+                        <div class="stat-box"><span class="stat-val">${ch.er}%</span><span class="stat-lbl">ER</span></div>
+                    </div>
+
+                    <div class="price-breakdown">
+                        <span class="safe-tag">🛡 TEQRA SafePay | Формат: ${ch.format}</span>
+                        <div><span>Ціна каналу:</span> <span>${rawPrice.toLocaleString('uk-UA')} ₴</span></div>
+                        <div><span>Комісія сервісу (15%):</span> <span>${commission.toLocaleString('uk-UA')} ₴</span></div>
+                        <div class="price-total"><span>До сплати:</span> <span>${totalPrice.toLocaleString('uk-UA')} ₴</span></div>
+                    </div>
+                    
+                    <button class="order-btn" onclick="order('${ch.title}', ${totalPrice}, '${ch.format}')">⚡️ Залишити заявку</button>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function order(title, price, format) {
+            vibe('heavy');
+            const msg = `⚡️ ЗАЯВКА НА РОЗМІЩЕННЯ\n\nКанал: ${title}\nФормат: ${format}\nДо сплати: ${price.toLocaleString('uk-UA')} ₴\n\nОчікую на реквізити SafePay.`;
             tg.openTelegramLink(`https://t.me/${ADMIN}?text=${encodeURIComponent(msg)}`);
         }
 
-        function topUp() {
-            const msg = `💳 ПОПОВНЕННЯ БАЛАНСУ\n\nБажаю поповнити баланс особистого кабінету TEQRA Ads.\nНадішліть реквізити для оплати.`;
-            tg.openTelegramLink(`https://t.me/${ADMIN}?text=${encodeURIComponent(msg)}`);
+        function filterByCat(cat, el) {
+            vibe();
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            if(el) el.classList.add('active');
+            currentCat = cat;
+            handleSearch(); // Застосовуємо пошук поверх категорії
         }
 
-        loadData();
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = currentCat === 'all' ? channels : channels.filter(c => c.catName === currentCat);
+            
+            if (query) {
+                filtered = filtered.filter(c => c.title.toLowerCase().includes(query));
+            }
+            render(filtered);
+        }
+
+        init();
     </script>
 </body>
 </html>

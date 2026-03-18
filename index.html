@@ -18,7 +18,6 @@
             margin: 0; padding-bottom: 40px; overflow-x: hidden;
         }
 
-        /* Хедер з розмиттям */
         .glass-header {
             position: sticky; top: 0; z-index: 50;
             background: rgba(15, 15, 16, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -39,7 +38,6 @@
         .status-line { font-size: 10px; color: var(--success); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; font-weight: 700; text-transform: uppercase; }
         .status-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success); }
 
-        /* Фільтри */
         .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
         .filters::-webkit-scrollbar { display: none; }
         .chip { 
@@ -51,7 +49,6 @@
 
         .main-content { padding: 15px; }
 
-        /* Картка каналу */
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .card { 
             background: var(--card); border-radius: 24px; padding: 22px; margin-bottom: 15px; 
@@ -68,13 +65,11 @@
             border-radius: 12px; font-size: 11px; font-weight: 700; text-decoration: none; border: 1px solid rgba(10, 132, 255, 0.2);
         }
 
-        /* Статистика */
         .stats { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 18px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 16px; }
         .stat-box { text-align: center; width: 33%; }
         .stat-val { font-size: 15px; font-weight: 800; display: block; color: #fff; }
         .stat-lbl { font-size: 9px; color: var(--hint); text-transform: uppercase; margin-top: 2px; display: block;}
 
-        /* Формат */
         .format-badge {
             background: rgba(255,255,255,0.05); color: var(--hint);
             padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
@@ -82,7 +77,6 @@
             text-transform: uppercase;
         }
 
-        /* Ціна та кнопка */
         .price-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 18px; }
         .price { font-size: 22px; font-weight: 900; }
         .price span { font-size: 13px; color: var(--hint); font-weight: normal; }
@@ -103,7 +97,7 @@
         <div class="header-top">
             <div class="header"><h1>TEQRA <span>Ads</span></h1></div>
             <div class="nav-btns">
-                <button class="nav-btn" onclick="tg.openTelegramLink('https://t.me/ТВОЯ_ПОСИЛКА_НА_ВІДГУКИ')">⭐️ Відгуки</button>
+                <button class="nav-btn" onclick="tg.openTelegramLink('https://t.me/TEQRA_Manager')">⭐️ Відгуки</button>
                 <button class="nav-btn" onclick="showSecurity()">🛡 Гарантії</button>
             </div>
         </div>
@@ -142,36 +136,53 @@
         };
 
         const SHEET_ID = '1arC_OE150V-0onKPWEwhNpK_ZuBJhJ0ZWvRSF2VwFu8';
-        const ADMIN = 'TEQRA_Manager';
+        const ADMIN = 'TEQRA_Manager'; 
         let channels = [];
 
         async function init() {
             try {
-                const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`);
+                // cachebust додається, щоб Google не віддавав старі нулі
+                const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&cb=${Date.now()}`);
                 const text = await res.text();
                 const json = JSON.parse(text.substring(47).slice(0, -2));
                 
-                channels = json.table.rows.map(r => ({
-                    id: r.c[0]?.v, title: r.c[1]?.v, link: r.c[2]?.v,
-                    catName: r.c[4]?.v, subs: r.c[5]?.v, views: r.c[6]?.v,
-                    er: r.c[7]?.v, price: r.c[8]?.v,
-                    format: r.c[9]?.v // Зчитуємо Формат з колонки J
-                })).filter(c => c.title);
+                // Функція для перетворення тексту в число
+                const getNum = (val) => {
+                    if (!val) return 0;
+                    let v = val.v !== undefined ? val.v : val.f;
+                    if (!v) return 0;
+                    let clean = String(v).replace(/[^0-9.]/g, '');
+                    return Number(clean) || 0;
+                };
 
-                // Унікальні категорії без дублікатів
+                channels = json.table.rows.map(r => ({
+                    id: r.c[0]?.v, 
+                    title: r.c[1]?.v || r.c[1]?.f, 
+                    link: r.c[2]?.v || r.c[2]?.f,
+                    catName: r.c[4]?.v || r.c[4]?.f, 
+                    subs: getNum(r.c[5]), 
+                    views: getNum(r.c[6]),
+                    er: getNum(r.c[7]), 
+                    price: getNum(r.c[8]), // Отримуємо числове значення з колонки I
+                    format: r.c[9]?.v || r.c[9]?.f || '2/48'
+                })).filter(c => c.title && c.title !== 'title');
+
+                // Фільтри категорій
                 const cats = [...new Set(channels.map(c => {
                     if (!c.catName) return null;
                     let name = c.catName.toString().trim();
                     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
                 }).filter(Boolean))];
 
+                const container = document.getElementById('catContainer');
+                container.innerHTML = '<div class="chip active" onclick="filterByCat(\'all\', this)">Всі канали</div>';
                 cats.forEach(c => {
-                    document.getElementById('catContainer').innerHTML += `<div class="chip" onclick="filterByCat('${c}', this)">${c}</div>`;
+                    container.innerHTML += `<div class="chip" onclick="filterByCat('${c}', this)">${c}</div>`;
                 });
                 
                 render(channels);
             } catch (e) { 
-                document.getElementById('list').innerHTML = '<div style="text-align:center; padding:40px;">❌ Помилка завантаження бази.</div>'; 
+                document.getElementById('list').innerHTML = '<div style="text-align:center; padding:40px;">❌ Помилка завантаження бази. Спробуйте оновити.</div>'; 
             }
         }
 
@@ -191,16 +202,16 @@
                         <a href="#" class="view-btn" onclick="vibe(); event.stopPropagation(); tg.openTelegramLink('${ch.link}')">🔍 Канал</a>
                     </div>
                     
-                    <div class="format-badge">Формат: ${ch.format || '1/24'}</div>
+                    <div class="format-badge">Формат: ${ch.format}</div>
 
                     <div class="stats">
-                        <div class="stat-box"><span class="stat-val">${formatK(Number(ch.subs))}</span><span class="stat-lbl">Сабів</span></div>
-                        <div class="stat-box"><span class="stat-val">${formatK(Number(ch.views))}</span><span class="stat-lbl">Охопл</span></div>
-                        <div class="stat-box"><span class="stat-val">${ch.er || 0}%</span><span class="stat-lbl">ER</span></div>
+                        <div class="stat-box"><span class="stat-val">${formatK(ch.subs)}</span><span class="stat-lbl">Сабів</span></div>
+                        <div class="stat-box"><span class="stat-val">${formatK(ch.views)}</span><span class="stat-lbl">Охопл</span></div>
+                        <div class="stat-box"><span class="stat-val">${ch.er}%</span><span class="stat-lbl">ER</span></div>
                     </div>
                     
                     <div class="price-row">
-                        <div class="price">${Number(ch.price || 0).toLocaleString('uk-UA')} <span>₴</span></div>
+                        <div class="price">${Number(ch.price).toLocaleString('uk-UA')} <span>₴</span></div>
                         <div class="order-btn" onclick="order('${ch.title}', '${ch.price}', '${ch.format}')">Обрати</div>
                     </div>
                 `;
@@ -210,8 +221,7 @@
 
         function order(title, price, format) {
             vibe('heavy');
-            const f = format || '1/24';
-            const msg = `⚡️ Заявка TEQRA Ads\n\nКанал: ${title}\nФормат: ${f}\nЦіна: ${Number(price).toLocaleString()} ₴\n\nЧекаю на деталі оплати!`;
+            const msg = `⚡️ Заявка TEQRA Ads\n\nКанал: ${title}\nФормат: ${format}\nЦіна: ${Number(price).toLocaleString()} ₴\n\nЧекаю на деталі оплати!`;
             tg.openTelegramLink(`https://t.me/${ADMIN}?text=${encodeURIComponent(msg)}`);
         }
 
